@@ -140,6 +140,77 @@ Get your API keys:
 
 ---
 
+## Docker / Kubernetes
+
+The Docker image runs the MCP server over stateless Streamable HTTP at `/mcp`. All configuration is provided through environment variables.
+
+### Build and run
+
+```bash
+docker build -t ethereum-mcp:2.0.0 .
+
+docker run --rm -p 3000:3000 \
+  -e ETHERSCAN_API_KEY=your-key-here \
+  -e ETH_NODE_URL=http://your-node:8545 \
+  ethereum-mcp:2.0.0
+```
+
+The MCP endpoint is `http://localhost:3000/mcp`, and the health endpoint is `http://localhost:3000/healthz`.
+
+### Environment variables
+
+| Variable             | Default in image | Description                                      |
+| -------------------- | ---------------- | ------------------------------------------------ |
+| `MCP_TRANSPORT`      | `http`           | `http` or `stdio`                                |
+| `HOST`               | `0.0.0.0`        | HTTP bind address                                |
+| `PORT`               | `3000`           | HTTP port                                        |
+| `MCP_PATH`           | `/mcp`           | MCP endpoint path                                |
+| `ETHERSCAN_API_KEY`  | —                | Etherscan API key (required for Etherscan tools) |
+| `DUNE_API_KEY`       | —                | Optional Dune Analytics key                      |
+| `COINGECKO_API_KEY`  | —                | Optional CoinGecko Pro key                       |
+| `DEFILLAMA_API_KEY`  | —                | Optional DefiLlama Pro key                       |
+| `ETH_NODE_URL`       | —                | Optional Ethereum JSON-RPC node URL              |
+
+Outside the Docker image, `MCP_TRANSPORT` defaults to `stdio`. Set `MCP_TRANSPORT=stdio` in the container to run the original stdio transport (for sidecar deployments).
+
+Configure API keys through environment variables in shared deployments. The `set_*_key` tools modify process-global state and are intended for local interactive use.
+
+### Kubernetes
+
+The `k8s/` directory contains reference manifests for a Deployment, ClusterIP Service, ConfigMap, and Kustomization. The Secret is provided only as `secret.example.yaml`; create the real Secret separately:
+
+```bash
+kubectl create secret generic ethereum-mcp-secrets \
+  --from-literal=ETHERSCAN_API_KEY=... \
+  --from-literal=DUNE_API_KEY=... \
+  --from-literal=COINGECKO_API_KEY=... \
+  --from-literal=DEFILLAMA_API_KEY=... \
+  --from-literal=ETH_NODE_URL=...
+```
+
+Update the image reference in `k8s/deployment.yaml`, then apply the manifests:
+
+```bash
+kubectl apply -k k8s/
+```
+
+The HTTP endpoint does not include authentication. Keep the Service internal (`ClusterIP`) or enforce authentication at the Ingress/gateway and restrict access with `NetworkPolicy`.
+
+### GitHub Actions image build
+
+`.github/workflows/build-docker.yml` builds and pushes the image to Google Artifact Registry using OIDC (Workload Identity Federation). Configure these repository variables under **Settings → Secrets and variables → Actions → Variables**:
+
+| Variable                          | Description                                                        |
+| --------------------------------- | ------------------------------------------------------------------ |
+| `GCP_PROJECT_ID`                  | Google Cloud project ID                                            |
+| `GAR_REPOSITORY`                  | Artifact Registry repository name (for example `ensuro`)           |
+| `GCP_WORKLOAD_IDENTITY_PROVIDER`  | Full Workload Identity Provider resource name                      |
+| `GCP_SERVICE_ACCOUNT`             | Service account email used for OIDC impersonation                  |
+
+The workflow runs on pushes to `main`, on `v*` tags, and on manual dispatch. It pushes to `us-docker.pkg.dev/<GCP_PROJECT_ID>/<GAR_REPOSITORY>/ethereum-mcp` and uses the `ensuro/github-actions/build-docker` action. Switch the action ref from `@feat/build-docker-oidc` to `@main` once the OIDC support is merged.
+
+---
+
 ## Limitations
 
 - **Query limits**: Up to 10,000 results per query

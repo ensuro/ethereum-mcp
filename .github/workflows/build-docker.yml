@@ -1,0 +1,34 @@
+name: Build and Push Docker Image
+
+# Required repository variables (Settings -> Secrets and variables -> Actions -> Variables):
+#   GCP_PROJECT_ID                  Google Cloud project ID
+#   GAR_REPOSITORY                  Artifact Registry repository name (e.g. ensuro)
+#   GCP_WORKLOAD_IDENTITY_PROVIDER  Full Workload Identity Provider resource name
+#   GCP_SERVICE_ACCOUNT             Service account email used for OIDC impersonation
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches:
+      - main
+    tags:
+      - v*
+
+# Required for OIDC authentication against Google Cloud.
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Build and push
+        # Switch to @main once ensuro/github-actions#build-docker-oidc is merged.
+        uses: ensuro/github-actions/build-docker@feat/build-docker-oidc
+        with:
+          image: "${{ vars.GCP_PROJECT_ID }}/${{ vars.GAR_REPOSITORY }}/ethereum-mcp"
+          workload_identity_provider: "${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}"
+          service_account: "${{ vars.GCP_SERVICE_ACCOUNT }}"
