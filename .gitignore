@@ -6,5 +6,6 @@ node_modules/
 .mcp.json
 .claude/
 .wrangler/
+k8s/secret.yaml
 000/
 spec-output.md

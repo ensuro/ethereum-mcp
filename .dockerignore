@@ -1,0 +1,15 @@
+node_modules
+dist
+.git
+.gitignore
+.env
+.env.*
+*.log
+.mcp.json
+.claude
+.wrangler
+000
+spec-output.md
+son.png
+README.md
+k8s
