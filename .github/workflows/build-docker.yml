@@ -26,8 +26,7 @@ jobs:
 
     steps:
       - name: Build and push
-        # Switch to @main once ensuro/github-actions#build-docker-oidc is merged.
-        uses: ensuro/github-actions/build-docker@feat/build-docker-oidc
+        uses: ensuro/github-actions/build-docker@v2
         with:
           image: "${{ vars.GCP_PROJECT_ID }}/${{ vars.GAR_REPOSITORY }}/ethereum-mcp"
           workload_identity_provider: "${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}"
